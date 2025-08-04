@@ -13,3 +13,14 @@ A simple, robust command-line interface for conversational AI using llama-cpp-py
 ```bash
 pip install llama-cpp-python
 python llama_conversation.py example.prompt
+
+## Docker start
+
+Create a models-config.json file (see example) and start the container:
+
+docker run -d --name llama-server -p 8000:8000 \
+  -v /path/to/your/models:/models \
+  -v ./config:/config \
+  -e CONFIG_FILE=/config/models-config.json \
+  --restart unless-stopped \
+  ghcr.io/abetlen/llama-cpp-python:latest

@@ -1,0 +1,27 @@
+{
+  "host": "0.0.0.0",
+  "port": 2547,
+  "models": [
+    {
+      "model": "/models/Meta-Llama-3.1-13B-Instruct-abliterated.Q4_K_M.gguf",
+      "model_alias": "llama-13b",
+      "n_ctx": 32768,
+      "n_gpu_layers": -1,
+      "chat_format": "llama-3"
+    },
+    {
+      "model": "/models/nvidia_Llama-3_3-Nemotron-Super-49B-v1_5-Q4_K_M.gguf",
+      "model_alias": "nemotron",
+      "n_ctx": 32768,
+      "n_gpu_layers": -1,
+      "chat_format": "llama-3"
+    },
+    {
+      "model": "/models/Llama-3.3-70B-Instruct-Q4_K_M.gguf",
+      "model_alias": "llama-70b",
+      "n_ctx": 32768,
+      "n_gpu_layers": -1,
+      "chat_format": "llama-3"
+    }
+  ]
+}
