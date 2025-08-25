@@ -6,7 +6,7 @@
 # Configuration - UPDATE THESE PATHS
 VENV_PATH="/home/lj/ai-research"
 MONITOR_SCRIPT="$VENV_PATH/llama-conversation/llama-prompt-monitor.py"  # Use the no-lock version
-PROMPT_DIR="$VENV_PATH/prompts"
+PROMPT_DIR="$VENV_PATH/batchprompts"
 LOG_FILE="/var/log/llama-monitor.log"
 LOCK_FILE="/tmp/llama-monitor.lock"
 
@@ -64,7 +64,9 @@ fi
 
 # Run the monitor
 log_message "Starting llama monitor (venv: $VIRTUAL_ENV)"
-python "$MONITOR_SCRIPT" "$PROMPT_DIR" --llama-script $VENV_PATH/llama-conversation/llama-conversation-docker.py --log "$LOG_FILE" "$@"
+python "$MONITOR_SCRIPT" "$PROMPT_DIR" --llama-script $VENV_PATH/llama-conversation/ollama-conversation.py --log "$LOG_FILE" "$@"
+#python "$MONITOR_SCRIPT" "$PROMPT_DIR" --llama-script $VENV_PATH/llama-conversation/llama-conversation-docker.py --log "$LOG_FILE" "$@"
+
 
 # Capture exit code
 EXIT_CODE=$?

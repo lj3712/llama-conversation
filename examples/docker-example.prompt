@@ -1,10 +1,11 @@
-# Configuration for Docker llama-cpp-python server
-server_url: http://localhost:2547/v1    # URL of your Docker container
-model_name: llama-13b                # Model alias from your config file
-max_tokens: none                    # Maximum tokens to generate
-temperature: 0.9                         # Creativity level (0.0-2.0)
+# Configuration for Ollama server
+server_url: http://localhost:11434    	# URL of Ollama server
+model_name: deepseek-r1:32b           	# Model alias from your config file
+max_tokens: none                    	# Maximum tokens to generate
+temperature: 0.9                        # Creativity level (0.0-2.0)
 top_p: 0.9                              # Nucleus sampling parameter
+timeout: 3600				# Timeout on response duration
 
 ---
 ---HUMAN---
-Hello! I'm testing the Docker version of llama-cpp-python with multiple model support. Can you explain what makes large language models useful for research?
+Hello! I'm testing the Ollama server with multiple model support. Can you explain what makes large language models useful for research?

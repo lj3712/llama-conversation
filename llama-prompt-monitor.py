@@ -12,6 +12,53 @@ import argparse
 import subprocess
 from pathlib import Path
 from datetime import datetime
+import requests
+import psutil
+from typing import Optional
+
+class OllamaMonitor:
+    def __init__(self, api_url: str = "http://localhost:11434"):
+        self.api_url = api_url
+
+    def is_busy(self) -> bool:
+        """Check if Ollama is currently busy"""
+        return self._has_loaded_models() or self._high_cpu_usage()
+
+    def _has_loaded_models(self) -> bool:
+        """Check if any models are loaded via API"""
+        try:
+            response = requests.get(f"{self.api_url}/api/ps", timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                return len(data.get('models', [])) > 0
+        except requests.RequestException:
+            pass
+        return False
+
+    def _high_cpu_usage(self) -> bool:
+        """Check if ollama processes are using significant CPU"""
+        total_cpu = 0
+        for proc in psutil.process_iter(['name', 'cpu_percent']):
+            try:
+                if 'ollama' in proc.info['name'].lower():
+                    total_cpu += proc.info['cpu_percent']
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+
+        return total_cpu > 5.0
+
+    def wait_for_idle(self, check_interval: int = 10, timeout: Optional[int] = None) -> bool:
+        """Wait for Ollama to become idle"""
+        start_time = time.time()
+
+        while self.is_busy():
+            if timeout and (time.time() - start_time) > timeout:
+                return False
+
+            print(f"Ollama is busy, waiting {check_interval} seconds...")
+            time.sleep(check_interval)
+
+        return True
 
 def find_prompt_files(directory):
     """Find all .prompt files that are not already completed"""
@@ -37,7 +84,7 @@ def is_file_ready(filepath, wait_time=2):
         return False
 
 def process_prompt_file(prompt_file, llama_script_path, verbose=False, python_executable=None):
-    """Process a single .prompt file using llama-conversation-docker.py"""
+    """Process a single .prompt file using ollama-conversation.py"""
     if verbose:
         print(f"Processing: {prompt_file}")
 
@@ -45,7 +92,7 @@ def process_prompt_file(prompt_file, llama_script_path, verbose=False, python_ex
         # Use specified python executable or current one
         python_exec = python_executable or sys.executable
 
-        # Run llama-conversation-docker.py on the file
+        # Run ollama-conversation.py on the file
         cmd = [python_exec, llama_script_path, prompt_file]
         if verbose:
             cmd.append("--verbose")
@@ -54,7 +101,7 @@ def process_prompt_file(prompt_file, llama_script_path, verbose=False, python_ex
             cmd,
             capture_output=True,
             text=True,
-            timeout=7200  # 30 minute timeout
+            timeout=7200  # 2 hour timeout
         )
 
         if result.returncode == 0:
@@ -108,12 +155,12 @@ def log_activity(message, log_file=None):
             print(f"Warning: Could not write to log file {log_file}: {e}")
 
 def find_llama_script():
-    """Try to find llama-conversation-docker.py in common locations"""
+    """Try to find ollama-conversation.py in common locations"""
     possible_locations = [
-        "llama-conversation-docker.py",  # Current directory
-        os.path.join(os.path.dirname(__file__), "llama-conversation-docker.py"),  # Same dir as monitor
-        os.path.expanduser("~/llama-conversation-docker.py"),  # Home directory
-        "/usr/local/bin/llama-conversation-docker.py",  # System location
+        "ollama-conversation.py",  # Current directory
+        os.path.join(os.path.dirname(__file__), "ollama-conversation.py"),  # Same dir as monitor
+        os.path.expanduser("~/ollama-conversation.py"),  # Home directory
+        "/usr/local/bin/ollama-conversation.py",  # System location
     ]
 
     for location in possible_locations:
@@ -159,7 +206,7 @@ Examples:
 
     parser.add_argument(
         "--llama-script",
-        help="Path to llama-conversation-docker.py script"
+        help="Path to ollama-conversation.py script"
     )
 
     parser.add_argument(
@@ -191,15 +238,15 @@ Examples:
         print(f"Error: Directory '{args.directory}' does not exist")
         sys.exit(1)
 
-    # Find llama-conversation-docker.py script
+    # Find ollama-conversation.py script
     llama_script = args.llama_script or find_llama_script()
     if not llama_script:
-        print("Error: Could not find llama-conversation-docker.py script")
+        print("Error: Could not find ollama-conversation.py script")
         print("Please specify location with --llama-script option")
         sys.exit(1)
 
     if not os.path.isfile(llama_script):
-        print(f"Error: llama-conversation-docker.py script not found at: {llama_script}")
+        print(f"Error: ollama-conversation.py script not found at: {llama_script}")
         sys.exit(1)
 
     log_activity(f"Monitor started for directory: {args.directory}", args.log)
@@ -245,6 +292,10 @@ Examples:
         return processed_count
 
     # Main processing loop
+    monitor = OllamaMonitor()
+    if monitor.is_busy():
+        log_activity("Ollama is active. Aborting.")
+        sys.exit(2) 
     try:
         if args.continuous:
             log_activity(f"Starting continuous monitoring (interval: {args.interval}s)", args.log)
